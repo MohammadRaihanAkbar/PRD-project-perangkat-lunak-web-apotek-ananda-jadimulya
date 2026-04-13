@@ -3,8 +3,8 @@
 ## Sistem Informasi Manajemen Stok Obat
 ## Apotek Ananda Jadimulya
 
-**Versi:** 2.2 (Revisi)
-**Tanggal:** 4 April 2026
+**Versi:** 2.4 (Revisi)
+**Tanggal:** 13 April 2026
 **Disusun oleh:** Tim Pengembang
 
 ---
@@ -15,8 +15,10 @@
 |-------|---------|-----------|
 | 1.0 | - | Versi awal PRD |
 | 2.0 | 4 April 2026 | Hapus fitur Kasir, Stok Keluar, Laporan Harian. Gabung Manajemen Obat ke Stok Masuk. Tambah fitur Piutang. |
-| 2.1 | 4 April 2026 | Revisi struktur Stok Masuk jadi tabel per faktur/PBF (tambah kolom discount). Laporan Expired jadi input manual terpisah. Restructure database. |
-| 2.2 | 4 April 2026 | Tambah tabel faktur sebagai header. Laporan Expired hanya Super Admin. Tambah fitur Global Search & navigasi per Faktur/PBF. |
+| 2.1 | 4 April 2026 | Revisi struktur Stok Masuk jadi tabel per PBF (tambah kolom discount). Laporan Expired jadi input manual terpisah. Restructure database. |
+| 2.2 | 4 April 2026 | Tambah tabel PBF sebagai header. Laporan Expired hanya Super Admin. Tambah fitur Global Search & navigasi per PBF. |
+| 2.3 | 13 April 2026 | Mengubah istilah "Tambah Faktur" menjadi "Tambah PBF". Menambah kolom Upload Foto Bukti Pembayaran pada Piutang. |
+| 2.4 | 13 April 2026 | Revisi total tampilan Stok Masuk: tampilan utama menampilkan seluruh obat secara global dengan filter tab per PBF. Tambah obat dilakukan secara global dengan memilih asal PBF. Klik obat menampilkan detail. |
 
 ---
 
@@ -29,7 +31,7 @@ Adapun tujuan dari pengembangan sistem ini adalah sebagai berikut:
 1. Mempermudah pencatatan stok obat yang masuk dari PBF (Pedagang Besar Farmasi) per faktur.
 2. Mempermudah pengelolaan dan pencarian data obat masuk di apotek.
 3. Mempermudah pemantauan obat yang mendekati tanggal kedaluwarsa (expired date) melalui input manual.
-4. Mempermudah pencatatan dan pemantauan piutang ke PBF/Faktur.
+4. Mempermudah pencatatan dan pemantauan piutang ke PBF.
 5. Mempermudah pembuatan laporan piutang secara otomatis dengan fitur export.
 6. Meningkatkan efisiensi pengelolaan persediaan obat di Apotek Ananda Jadimulya.
 
@@ -50,8 +52,8 @@ Super Admin memiliki **akses penuh** terhadap seluruh fitur sistem.
 | No | Hak Akses | Keterangan |
 |----|-----------|------------|
 | 1 | Mengakses Dashboard | Melihat ringkasan data apotek |
-| 2 | Mengelola Faktur & Stok Masuk | Tambah faktur, input, edit, hapus obat per faktur |
-| 3 | Global Search Obat | Mencari data obat dari seluruh PBF/faktur |
+| 2 | Mengelola PBF & Stok Masuk | Tambah PBF, input obat global (pilih asal PBF), edit, hapus obat |
+| 3 | Pencarian Obat | Mencari data obat dari seluruh PBF |
 | 4 | Mengelola Laporan Obat Expired | Input, edit, hapus, dan lihat data obat expired |
 | 5 | Mengelola Piutang | Input, edit, lihat, dan export data piutang |
 | 6 | Mengelola Akun Admin | Tambah, edit, dan hapus akun admin |
@@ -67,8 +69,8 @@ Admin bertugas membantu operasional apotek sehari-hari.
 | No | Hak Akses | Keterangan |
 |----|-----------|------------|
 | 1 | Mengakses Dashboard | Melihat ringkasan data apotek |
-| 2 | Mengelola Faktur & Stok Masuk | Tambah faktur, input, edit obat per faktur |
-| 3 | Global Search Obat | Mencari data obat dari seluruh PBF/faktur |
+| 2 | Mengelola PBF & Stok Masuk | Tambah PBF, input obat global (pilih asal PBF), edit obat |
+| 3 | Pencarian Obat | Mencari data obat dari seluruh PBF |
 | 4 | Melihat Laporan Obat Expired | Hanya melihat data obat expired |
 | 5 | Mengelola Piutang | Input dan lihat data piutang |
 
@@ -79,9 +81,9 @@ Admin bertugas membantu operasional apotek sehari-hari.
 
 ## 3. Alur Kerja Sistem
 
-### 3.1 Input Stok Obat Masuk (Per Faktur / PBF)
+### 3.1 Input Stok Obat Masuk (Global dengan Filter PBF)
 
-Proses ini dilakukan ketika PBF mengirim obat ke apotek. Admin/Super Admin **membuat faktur terlebih dahulu**, kemudian menginput daftar obat di dalam faktur tersebut.
+Proses ini dilakukan ketika PBF mengirim obat ke apotek. Halaman Stok Masuk menampilkan **seluruh data obat dari semua PBF** secara global. User dapat memfilter berdasarkan PBF tertentu menggunakan tombol/tab filter di bagian atas. Saat menambah obat baru, user memilih asal PBF langsung di dalam form input.
 
 **Alur proses:**
 
@@ -95,48 +97,78 @@ Admin/Super Admin login ke sistem
 Membuka menu "Stok Masuk"
   │
   ▼
-Sistem menampilkan daftar faktur/PBF
+Sistem menampilkan SELURUH obat
+dari SEMUA PBF dalam satu tabel global
   │
   ▼
-┌─────────────────────────────────────┐
-│ Apakah faktur sudah ada?            │
-├─────────┬───────────────────────────┤
-│   YA    │          TIDAK            │
-│         │                           │
-│  ▼      │     ▼                     │
-│ Klik    │  Klik "Tambah Faktur      │
-│ faktur  │  Baru"                    │
-│ yang    │  Isi data faktur:         │
-│ ada     │  - No. Faktur             │
-│         │  - Nama PBF               │
-│         │  - Tanggal Masuk          │
-│         │  Simpan faktur baru       │
-└────┬────┴──────────┬────────────────┘
-     │               │
-     ▼               ▼
-Masuk ke halaman detail faktur
+┌──────────────────────────────────────────┐
+│  [Semua] [Carmella] [Kimia Farma] [...]  │  ← Tab filter PBF
+│──────────────────────────────────────────│
+│  🔍 Cari obat...          [+ Tambah Obat]│
+│──────────────────────────────────────────│
+│  No │ Nama Obat │ PBF │ Satuan │ ...    │
+│   1 │ Paracetamol│Carmella│ Strip │ ...   │
+│   2 │ Amoxicillin│Carmella│ Box   │ ...   │
+│   3 │ Omeprazole │KimiaF  │ Strip │ ...   │
+│  ...│ ...       │ ...   │ ...   │ ...    │
+└──────────────────────────────────────────┘
   │
   ▼
-Klik "+ Tambah Obat"
+User bisa:
+  (A) Filter per PBF → klik tab PBF tertentu
+  (B) Cari obat → ketik di search bar
+  (C) Tambah obat → klik "+ Tambah Obat"
+  (D) Klik baris obat → lihat detail obat
   │
   ▼
-Isi data obat:
-- Nama obat
-- Satuan
-- Harga beli
-- Discount
-- Jumlah masuk
+┌──── Jika Tambah Obat (C) ────┐
+│                               │
+│  Klik "+ Tambah Obat"         │
+│  │                            │
+│  ▼                            │
+│  Isi data obat:               │
+│  - Asal PBF (pilih dari       │
+│    daftar PBF yang ada, atau  │
+│    klik "+ Tambah PBF Baru") │
+│  - Nama obat                  │
+│  - Satuan                     │
+│  - Harga beli                 │
+│  - Discount                   │
+│  - Jumlah masuk               │
+│  │                            │
+│  ▼                            │
+│  Sistem menghitung total:     │
+│  Total = (Harga Beli -        │
+│   Discount) × Jumlah Masuk    │
+│  │                            │
+│  ▼                            │
+│  Klik Simpan                  │
+│  │                            │
+│  ▼                            │
+│  Data obat masuk ke PBF       │
+│  yang dipilih dan tampil      │
+│  di tabel global              │
+└───────────────────────────────┘
   │
   ▼
-Sistem menghitung total otomatis:
-Total = (Harga Beli - Discount) × Jumlah Masuk
-  │
-  ▼
-Klik Simpan
-  │
-  ▼
-Data obat tampil di tabel faktur
-(bisa tambah obat lagi di faktur yang sama)
+┌──── Jika Klik Detail Obat (D) ┐
+│                                │
+│  Klik baris obat di tabel      │
+│  │                             │
+│  ▼                             │
+│  Sistem menampilkan popup/     │
+│  halaman detail obat:          │
+│  - Nama obat                   │
+│  - Asal PBF                    │
+│  - No. Faktur                  │
+│  - Tanggal masuk               │
+│  - Satuan                      │
+│  - Harga beli                  │
+│  - Discount                    │
+│  - Jumlah masuk                │
+│  - Total                       │
+│  - Tombol Edit / Hapus         │
+└────────────────────────────────┘
   │
   ▼
 End
@@ -144,9 +176,9 @@ End
 
 ---
 
-### 3.2 Global Search Obat
+### 3.2 Pencarian Obat (Global Search)
 
-Fitur pencarian yang memungkinkan user mencari obat tertentu dan menampilkan data obat tersebut dari **seluruh PBF/faktur**.
+Fitur pencarian terintegrasi di halaman Stok Masuk. User cukup mengetik nama obat di search bar, dan sistem akan menampilkan hasil dari **seluruh PBF**.
 
 **Alur proses:**
 
@@ -157,19 +189,25 @@ Start
 Login ke sistem
   │
   ▼
-Ketik nama obat di kolom search global
+Buka menu "Stok Masuk"
+  │
+  ▼
+Ketik nama obat di kolom search
 (contoh: "Paracetamol")
   │
   ▼
-Sistem menampilkan semua data obat
-"Paracetamol" dari seluruh PBF/faktur
-(lengkap dengan kolom: tanggal, satuan,
- harga beli, discount, jumlah, total,
- no. faktur, nama PBF)
+Sistem memfilter tabel dan menampilkan
+semua data obat "Paracetamol" dari
+seluruh PBF (lengkap dengan kolom:
+tanggal, satuan, harga beli, discount,
+jumlah, total, no. faktur, nama PBF)
   │
   ▼
 User dapat melihat perbandingan
 harga dari berbagai PBF
+  │
+  ▼
+Klik obat untuk melihat detail
   │
   ▼
 End
@@ -268,10 +306,10 @@ Membuka menu "Piutang"
 Cari piutang yang akan dilunasi
   │
   ▼
-Ubah status menjadi "Lunas"
+Ubah status menjadi "Lunas" dan Upload foto bukti pembayaran
   │
   ▼
-Sistem otomatis mencatat tanggal pelunasan
+Sistem menyimpan foto bukti dan otomatis mencatat tanggal pelunasan
   │
   ▼
 End
@@ -334,74 +372,114 @@ Dashboard menampilkan ringkasan informasi penting apotek:
 
 ---
 
-### 4.3 Stok Masuk (Per Faktur / PBF)
+### 4.3 Stok Masuk (Tampilan Global dengan Filter PBF)
 
-Fitur utama untuk mencatat obat yang masuk dari PBF. User **membuat faktur terlebih dahulu**, lalu menginput daftar obat di dalamnya.
+Fitur utama untuk mencatat obat yang masuk dari PBF. Halaman menampilkan **seluruh obat dari semua PBF** dalam satu tabel global. User dapat memfilter per PBF menggunakan tab/tombol di atas tabel. Saat menambah obat, user memilih asal PBF langsung di form.
 
-**Navigasi Stok Masuk:**
+**Tampilan Halaman Stok Masuk:**
 
 ```
-Menu "Stok Masuk"
-│
-├── 🔍 [Search Global] ← cari obat dari semua PBF/faktur
-│
-├── 📋 Daftar Faktur/PBF
-│   ├── Carmella (F-001) - 12 Maret 2026
-│   │   ├── Paracetamol 500mg — 100 Strip
-│   │   ├── Amoxicillin 250mg — 50 Box
-│   │   └── [+ Tambah Obat]
-│   │
-│   ├── Kimia Farma (F-015) - 15 Maret 2026
-│   │   ├── Omeprazole 20mg — 30 Strip
-│   │   └── [+ Tambah Obat]
-│   │
-│   └── [+ Tambah Faktur Baru]
+┌──────────────────────────────────────────────────────────────┐
+│  STOK MASUK                                                  │
+│──────────────────────────────────────────────────────────────│
+│  Filter PBF:                                                 │
+│  [Semua] [Carmella] [Kimia Farma] [Anugrah] [+ Tambah PBF]  │
+│──────────────────────────────────────────────────────────────│
+│  🔍 Cari obat...                          [+ Tambah Obat]    │
+│──────────────────────────────────────────────────────────────│
+│  No │ Nama Obat      │ PBF         │ Satuan │ Harga  │ ...  │
+│   1 │ Paracetamol    │ Carmella    │ Strip  │ 5.000  │ ...  │
+│   2 │ Amoxicillin    │ Carmella    │ Box    │ 12.000 │ ...  │
+│   3 │ Omeprazole     │ Kimia Farma │ Strip  │ 8.500  │ ...  │
+│   4 │ Metformin      │ Anugrah     │ Tablet │ 3.200  │ ...  │
+│  ...│ ...            │ ...         │ ...    │ ...    │ ...  │
+│──────────────────────────────────────────────────────────────│
+│  Klik baris obat untuk melihat detail ↗                      │
+└──────────────────────────────────────────────────────────────┘
 ```
 
-**Fitur Faktur:**
+**Fitur utama halaman Stok Masuk:**
 
-| No | Fitur | Akses |
-|----|-------|-------|
-| 1 | Tambah faktur baru | Super Admin, Admin |
-| 2 | Edit data faktur | Super Admin, Admin |
-| 3 | Hapus faktur (beserta semua obat di dalamnya) | Super Admin saja |
-| 4 | Lihat daftar faktur | Super Admin, Admin |
+| No | Fitur | Keterangan | Akses |
+|----|-------|------------|-------|
+| 1 | Lihat seluruh obat (global) | Tabel menampilkan semua obat dari semua PBF | Super Admin, Admin |
+| 2 | Filter per PBF | Tab/tombol di atas tabel untuk filter obat per PBF | Super Admin, Admin |
+| 3 | Cari obat (search) | Search bar untuk mencari obat berdasarkan nama | Super Admin, Admin |
+| 4 | Tambah obat (global) | Form tambah obat dengan pilihan asal PBF | Super Admin, Admin |
+| 5 | Lihat detail obat | Klik baris obat untuk popup/halaman detail | Super Admin, Admin |
+| 6 | Edit data obat | Tombol edit di halaman detail obat | Super Admin, Admin |
+| 7 | Hapus data obat | Tombol hapus di halaman detail obat | **Super Admin saja** |
 
-**Input data faktur baru:**
+**Form Input Tambah Obat (Global):**
 
 | No | Kolom | Tipe | Keterangan |
 |----|-------|------|------------|
-| 1 | No. Faktur | Text | Nomor faktur dari PBF |
-| 2 | Nama PBF | Text | Nama Pedagang Besar Farmasi |
-| 3 | Tanggal Masuk | Date | Tanggal obat diterima |
-
-**Fitur Obat (di dalam faktur):**
-
-| No | Fitur | Akses |
-|----|-------|-------|
-| 1 | Tambah obat ke faktur | Super Admin, Admin |
-| 2 | Edit data obat | Super Admin, Admin |
-| 3 | Hapus data obat | Super Admin saja |
-| 4 | Lihat daftar obat per faktur | Super Admin, Admin |
-
-**Kolom tabel obat per faktur (input & tampilan):**
-
-| No | Kolom | Tipe | Keterangan |
-|----|-------|------|------------|
-| 1 | Nomor | Auto | Nomor urut |
+| 1 | Asal PBF | Select | Pilih dari daftar PBF yang sudah ada (atau tambah PBF baru) |
 | 2 | Nama Obat | Text | Nama obat yang masuk |
 | 3 | Satuan | Select | Satuan obat (Tube, Strip, Box, Pcs, dll) |
 | 4 | Harga Beli | Number | Harga beli per satuan |
 | 5 | Discount | Number | Potongan harga (dalam rupiah) |
 | 6 | Jumlah Masuk | Number | Jumlah obat yang diterima |
 | 7 | Total | Auto | Otomatis: (Harga Beli - Discount) × Jumlah Masuk |
-| 8 | Aksi | Button | Edit, Hapus (Super Admin) |
+
+**Kolom tabel global Stok Masuk (tampilan):**
+
+| No | Kolom | Tipe | Keterangan |
+|----|-------|------|------------|
+| 1 | Nomor | Auto | Nomor urut |
+| 2 | Nama Obat | Text | Nama obat yang masuk |
+| 3 | Nama PBF | Text | Asal PBF obat tersebut |
+| 4 | No. Faktur | Text | Nomor faktur dari PBF |
+| 5 | Tanggal Masuk | Date | Tanggal obat diterima |
+| 6 | Satuan | Text | Satuan obat |
+| 7 | Harga Beli | Number | Harga beli per satuan |
+| 8 | Discount | Number | Potongan harga |
+| 9 | Jumlah Masuk | Number | Jumlah obat yang diterima |
+| 10 | Total | Number | Otomatis: (Harga Beli - Discount) × Jumlah Masuk |
+
+**Detail Obat (popup/halaman saat klik baris):**
+
+| No | Informasi | Keterangan |
+|----|-----------|------------|
+| 1 | Nama Obat | Nama obat |
+| 2 | Asal PBF | Nama PBF pemasok |
+| 3 | No. Faktur | Nomor faktur dari PBF |
+| 4 | Tanggal Masuk | Tanggal obat diterima |
+| 5 | Satuan | Satuan obat |
+| 6 | Harga Beli | Harga beli per satuan |
+| 7 | Discount | Potongan harga |
+| 8 | Jumlah Masuk | Jumlah obat |
+| 9 | Total | Total harga |
+| 10 | Aksi | Edit (Super Admin & Admin), Hapus (Super Admin saja) |
 
 ---
 
-### 4.4 Global Search Obat
+### 4.4 Manajemen PBF
 
-Fitur pencarian lintas faktur/PBF. User bisa mencari nama obat dan melihat semua data obat tersebut dari seluruh PBF.
+Fitur untuk mengelola data PBF (Pedagang Besar Farmasi). PBF bisa ditambahkan melalui tombol "+ Tambah PBF" di bagian filter tab atau melalui form Tambah Obat.
+
+**Fitur PBF:**
+
+| No | Fitur | Akses |
+|----|-------|-------|
+| 1 | Tambah PBF baru | Super Admin, Admin |
+| 2 | Edit data PBF | Super Admin, Admin |
+| 3 | Hapus PBF (beserta semua obat di dalamnya) | Super Admin saja |
+| 4 | Lihat daftar PBF | Super Admin, Admin |
+
+**Input data PBF baru:**
+
+| No | Kolom | Tipe | Keterangan |
+|----|-------|------|------------|
+| 1 | Nama PBF | Text | Nama Pedagang Besar Farmasi |
+| 2 | No. Faktur | Text | Nomor faktur dari PBF |
+| 3 | Tanggal Masuk | Date | Tanggal obat diterima |
+
+---
+
+### 4.5 Pencarian Obat (Search)
+
+Fitur pencarian terintegrasi di halaman Stok Masuk. User bisa mencari nama obat dan hasil akan ditampilkan dari seluruh PBF. Klik baris obat untuk melihat detail.
 
 **Contoh:** Cari "Paracetamol" → tampil:
 
@@ -430,7 +508,7 @@ Fitur pencarian lintas faktur/PBF. User bisa mencari nama obat dan melihat semua
 
 ---
 
-### 4.5 Laporan Obat Expired (Input Manual — Super Admin Only)
+### 4.6 Laporan Obat Expired (Input Manual — Super Admin Only)
 
 Fitur ini digunakan oleh **Super Admin** untuk **mencatat secara manual** data obat yang mendekati atau sudah melewati tanggal kedaluwarsa. **Admin hanya dapat melihat** data.
 
@@ -460,7 +538,7 @@ Fitur ini digunakan oleh **Super Admin** untuk **mencatat secara manual** data o
 
 ---
 
-### 4.6 Piutang (Accounts Receivable)
+### 4.7 Piutang (Accounts Receivable)
 
 Fitur untuk mencatat dan merekap piutang apotek kepada PBF berdasarkan faktur pembelian.
 
@@ -474,6 +552,7 @@ Fitur untuk mencatat dan merekap piutang apotek kepada PBF berdasarkan faktur pe
 | 4 | Jumlah Harga | Number | Total nilai faktur |
 | 5 | Status | Select | "Lunas" atau "Belum Lunas" |
 | 6 | Tanggal Lunas | Date | Otomatis terisi saat status diubah ke "Lunas" |
+| 7 | Bukti Pembayaran | File | Upload foto bukti pembayaran (opsional saat input awal, wajib saat pelunasan) |
 
 **Output laporan piutang per bulan:**
 
@@ -486,6 +565,7 @@ Fitur untuk mencatat dan merekap piutang apotek kepada PBF berdasarkan faktur pe
 | 5 | Jumlah Harga | Total nilai faktur |
 | 6 | Status | Lunas / Belum Lunas |
 | 7 | Tanggal Lunas | Tanggal pelunasan (jika sudah lunas) |
+| 8 | Bukti Pembayaran | Link/Tampilan foto bukti pembayaran (jika sudah lunas) |
 
 **Fitur tambahan piutang:**
 
@@ -499,7 +579,7 @@ Fitur untuk mencatat dan merekap piutang apotek kepada PBF berdasarkan faktur pe
 
 ---
 
-### 4.7 Manajemen Admin
+### 4.8 Manajemen Admin
 
 Fitur ini **hanya dapat diakses oleh Super Admin**.
 
@@ -519,8 +599,8 @@ Database menggunakan **5 tabel utama:**
 | No | Nama Tabel | Keterangan |
 |----|------------|------------|
 | 1 | `users` | Data pengguna sistem |
-| 2 | `faktur` | Data faktur/invoice dari PBF (header) |
-| 3 | `stok_masuk` | Detail obat per faktur (detail item) |
+| 2 | `pbf` | Data PBF penerimaan (header) |
+| 3 | `stok_masuk` | Detail obat per PBF (detail item) |
 | 4 | `obat_expired` | Data obat expired (input manual) |
 | 5 | `piutang` | Data piutang ke PBF |
 
@@ -542,13 +622,13 @@ Database menggunakan **5 tabel utama:**
 
 ---
 
-### 6.2 Tabel `faktur`
+### 6.2 Tabel `pbf`
 
 | Field | Tipe Data | Keterangan |
 |-------|-----------|------------|
-| `id_faktur` | INT (PK, AI) | ID faktur |
-| `no_faktur` | VARCHAR(100) | Nomor faktur dari PBF |
+| `id_pbf` | INT (PK, AI) | ID PBF penerimaan |
 | `nama_pbf` | VARCHAR(100) | Nama Pedagang Besar Farmasi |
+| `no_faktur` | VARCHAR(100) | Nomor faktur dari PBF |
 | `tanggal_masuk` | DATE | Tanggal obat diterima |
 | `id_user` | INT (FK → users.id_user) | User yang menginput |
 | `created_at` | DATETIME | Tanggal data dibuat |
@@ -561,7 +641,7 @@ Database menggunakan **5 tabel utama:**
 | Field | Tipe Data | Keterangan |
 |-------|-----------|------------|
 | `id_masuk` | INT (PK, AI) | ID stok masuk |
-| `id_faktur` | INT (FK → faktur.id_faktur) | Relasi ke faktur |
+| `id_pbf` | INT (FK → pbf.id_pbf) | Relasi ke PBF penerimaan |
 | `nama_obat` | VARCHAR(100) | Nama obat yang masuk |
 | `satuan` | ENUM('Tube', 'FLS', 'Strip', 'Sach', 'Box', 'Kaleng', 'Pcs', 'Tablet', 'Kapsul', 'Ampul', 'Supp', 'Ovula', 'Pack') | Satuan obat |
 | `harga_beli` | DECIMAL(12,2) | Harga beli per satuan |
@@ -603,6 +683,7 @@ Database menggunakan **5 tabel utama:**
 | `jumlah_harga` | DECIMAL(12,2) | Total nilai faktur |
 | `status` | ENUM('lunas', 'belum_lunas') DEFAULT 'belum_lunas' | Status pembayaran |
 | `tanggal_lunas` | DATE NULL | Tanggal pelunasan (NULL jika belum lunas) |
+| `bukti_pembayaran` | VARCHAR(255) NULL | Path foto bukti pembayaran |
 | `id_user` | INT (FK → users.id_user) | User yang menginput |
 | `created_at` | DATETIME | Tanggal data dibuat |
 | `updated_at` | DATETIME | Tanggal terakhir diperbarui |
@@ -613,10 +694,10 @@ Database menggunakan **5 tabel utama:**
 
 ```mermaid
 erDiagram
-    users ||--o{ faktur : "menginput"
+    users ||--o{ pbf : "menginput"
     users ||--o{ obat_expired : "menginput"
     users ||--o{ piutang : "menginput"
-    faktur ||--o{ stok_masuk : "memiliki"
+    pbf ||--o{ stok_masuk : "memiliki"
 
     users {
         INT id_user PK
@@ -628,10 +709,10 @@ erDiagram
         DATETIME updated_at
     }
 
-    faktur {
-        INT id_faktur PK
-        VARCHAR no_faktur
+    pbf {
+        INT id_pbf PK
         VARCHAR nama_pbf
+        VARCHAR no_faktur
         DATE tanggal_masuk
         INT id_user FK
         DATETIME created_at
@@ -640,7 +721,7 @@ erDiagram
 
     stok_masuk {
         INT id_masuk PK
-        INT id_faktur FK
+        INT id_pbf FK
         VARCHAR nama_obat
         ENUM satuan
         DECIMAL harga_beli
@@ -674,6 +755,7 @@ erDiagram
         DECIMAL jumlah_harga
         ENUM status
         DATE tanggal_lunas
+        VARCHAR bukti_pembayaran
         INT id_user FK
         DATETIME created_at
         DATETIME updated_at
@@ -687,22 +769,22 @@ users
   │
   │ 1 ──── * (one-to-many)
   │
-  ├──────── faktur         (user menginput faktur)
+  ├──────── pbf            (user menginput PBF)
   │
   ├──────── obat_expired   (user menginput data obat expired)
   │
   └──────── piutang        (user menginput piutang)
 
 
-faktur
+pbf
   │
   │ 1 ──── * (one-to-many)
   │
-  └──────── stok_masuk     (faktur memiliki banyak item obat)
+  └──────── stok_masuk     (PBF memiliki banyak item obat)
 ```
 
 > [!NOTE]
-> Tabel `faktur` berfungsi sebagai **header** yang menyimpan info faktur/PBF, sedangkan `stok_masuk` menyimpan **detail item obat** per faktur. Tabel `obat_expired` bersifat independen (input manual oleh Super Admin).
+> Tabel `pbf` berfungsi sebagai **header** yang menyimpan info PBF penerimaan, sedangkan `stok_masuk` menyimpan **detail item obat** per PBF. Tabel `obat_expired` bersifat independen (input manual oleh Super Admin).
 
 ---
 
@@ -726,7 +808,8 @@ faktur
 │                                                             │
 │   ┌───────────────────┐                                     │
 │   │  Stok Masuk        │◄──────── Super Admin & Admin       │
-│   │  (Per Faktur/PBF)  │          (Hapus: Super Admin)      │
+│   │  (Global + Filter  │          (Hapus: Super Admin)      │
+│   │   PBF)             │                                     │
 │   └───────────────────┘                                     │
 │                                                             │
 │   ┌───────────────────┐                                     │
@@ -756,9 +839,10 @@ Super Admin (Apoteker)
     │
     ├─── Login
     ├─── Dashboard
-    ├─── Stok Masuk per Faktur/PBF (Tambah, Edit, Hapus, Lihat, Cari)
+    ├─── Stok Masuk Global (Tambah, Edit, Hapus, Lihat, Cari, Filter PBF, Detail Obat)
+    ├─── Manajemen PBF (Tambah, Edit, Hapus)
     ├─── Laporan Obat Expired (Tambah, Edit, Hapus, Lihat, Cari)
-    ├─── Kelola Piutang (Tambah, Edit, Lihat, Export)
+    ├─── Kelola Piutang (Tambah, Edit, Lihat, Upload Bukti, Export)
     ├─── Kelola Admin (Tambah, Edit, Hapus)
     └─── Logout
 
@@ -766,8 +850,9 @@ Admin (Asisten Apoteker)
     │
     ├─── Login
     ├─── Dashboard
-    ├─── Stok Masuk per Faktur/PBF (Tambah, Edit, Lihat, Cari)
-    ├─── Laporan Obat Expired (Tambah, Lihat, Cari)
+    ├─── Stok Masuk Global (Tambah, Edit, Lihat, Cari, Filter PBF, Detail Obat)
+    ├─── Manajemen PBF (Tambah, Edit)
+    ├─── Laporan Obat Expired (Lihat, Cari)
     ├─── Kelola Piutang (Tambah, Lihat)
     └─── Logout
 ```
@@ -776,7 +861,7 @@ Admin (Asisten Apoteker)
 
 ## 9. Activity Diagram
 
-### 9.1 Activity Diagram — Input Stok Masuk
+### 9.1 Activity Diagram — Input Stok Masuk (Global)
 
 ```
 ┌───────┐
@@ -795,18 +880,19 @@ Admin (Asisten Apoteker)
     ▼
 ┌──────────────────────┐
 │ Sistem Menampilkan   │
-│ Tabel Stok Masuk     │
-│ (per Faktur/PBF)     │
+│ Seluruh Obat dari    │
+│ Semua PBF (Global)   │
+│ + Tab Filter PBF     │
 └───┬──────────────────┘
     ▼
 ┌──────────────────────┐
-│ Klik "Tambah         │
-│ Stok Masuk"          │
+│ Klik "+ Tambah Obat" │
 └───┬──────────────────┘
     ▼
 ┌──────────────────────┐
 │ Input Data:          │
-│ - Tanggal masuk      │
+│ - Asal PBF (pilih/   │
+│   tambah PBF baru)   │
 │ - Nama obat          │
 │ - Satuan             │
 │ - Harga beli         │
@@ -827,12 +913,13 @@ Admin (Asisten Apoteker)
     ▼
 ┌──────────────────────┐
 │ Sistem Menyimpan     │
-│ Data Stok Masuk      │
+│ Data ke PBF yang     │
+│ dipilih              │
 └───┬──────────────────┘
     ▼
 ┌──────────────────────┐
 │ Data Tampil di       │
-│ Tabel per Faktur/PBF │
+│ Tabel Global         │
 └───┬──────────────────┘
     ▼
 ┌───────┐
@@ -937,19 +1024,21 @@ Admin (Asisten Apoteker)
 │Simpan  │└────┬─────┘ └─────┬─────┘
 │Data    │     ▼            ▼
 └───┬────┘┌──────────┐┌───────────┐
-    ▼     │Tanggal   ││Klik       │
-┌────────┐│Lunas     ││Export     │
-│Selesai ││Otomatis  ││(Excel/PDF)│
-└────────┘│Tercatat  │└─────┬─────┘
-          └────┬─────┘      ▼
-               ▼       ┌───────────┐
-          ┌────────┐   │File       │
-          │Selesai │   │Terunduh   │
-          └────────┘   └─────┬─────┘
-                             ▼
-                        ┌────────┐
-                        │Selesai │
-                        └────────┘
+    ▼     │Upload    ││Klik       │
+┌────────┐│Foto Bukti││Export     │
+│Selesai ││Pembayaran││(Excel/PDF)│
+└────────┘└────┬─────┘└─────┬─────┘
+               ▼            ▼
+          ┌──────────┐┌───────────┐
+          │Tanggal   ││File       │
+          │Lunas     ││Terunduh   │
+          │Otomatis  │└─────┬─────┘
+          │Tercatat  │      ▼
+          └────┬─────┘┌────────┐
+               ▼      │Selesai │
+          ┌────────┐  └────────┘
+          │Selesai │
+          └────────┘
 ```
 
 ---
@@ -971,23 +1060,23 @@ classDiagram
         +getRole()
     }
 
-    class Faktur {
-        -int id_faktur
-        -string no_faktur
+    class PBF {
+        -int id_pbf
         -string nama_pbf
+        -string no_faktur
         -date tanggal_masuk
         -int id_user
         -datetime created_at
         -datetime updated_at
-        +tambahFaktur()
-        +editFaktur()
-        +hapusFaktur()
-        +cariFaktur()
+        +tambahPBF()
+        +editPBF()
+        +hapusPBF()
+        +cariPBF()
     }
 
     class StokMasuk {
         -int id_masuk
-        -int id_faktur
+        -int id_pbf
         -string nama_obat
         -string satuan
         -decimal harga_beli
@@ -1001,7 +1090,7 @@ classDiagram
         +hapusStokMasuk()
         +cariStokMasuk()
         +hitungTotal()
-        +getByFaktur()
+        +getByPBF()
     }
 
     class ObatExpired {
@@ -1031,6 +1120,7 @@ classDiagram
         -decimal jumlah_harga
         -string status
         -date tanggal_lunas
+        -string bukti_pembayaran
         -int id_user
         -datetime created_at
         -datetime updated_at
@@ -1042,10 +1132,10 @@ classDiagram
         +exportPDF()
     }
 
-    User "1" --> "*" Faktur : menginput
+    User "1" --> "*" PBF : menginput
     User "1" --> "*" ObatExpired : menginput
     User "1" --> "*" Piutang : menginput
-    Faktur "1" --> "*" StokMasuk : memiliki
+    PBF "1" --> "*" StokMasuk : memiliki
 ```
 
 ---
@@ -1200,12 +1290,12 @@ INSERT INTO users (nama_lengkap, username, password, role)
 VALUES ('Apoteker', 'superadmin', '$2y$10$hashed_password_here', 'super_admin');
 
 -- =============================================
--- TABEL: faktur
+-- TABEL: pbf
 -- =============================================
-CREATE TABLE faktur (
-    id_faktur INT AUTO_INCREMENT PRIMARY KEY,
-    no_faktur VARCHAR(100) NOT NULL,
+CREATE TABLE pbf (
+    id_pbf INT AUTO_INCREMENT PRIMARY KEY,
     nama_pbf VARCHAR(100) NOT NULL,
+    no_faktur VARCHAR(100) NOT NULL,
     tanggal_masuk DATE NOT NULL,
     id_user INT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -1218,7 +1308,7 @@ CREATE TABLE faktur (
 -- =============================================
 CREATE TABLE stok_masuk (
     id_masuk INT AUTO_INCREMENT PRIMARY KEY,
-    id_faktur INT NOT NULL,
+    id_pbf INT NOT NULL,
     nama_obat VARCHAR(100) NOT NULL,
     satuan ENUM('Tube', 'FLS', 'Strip', 'Sach', 'Box', 'Kaleng', 'Pcs', 'Tablet', 'Kapsul', 'Ampul', 'Supp', 'Ovula', 'Pack') NOT NULL,
     harga_beli DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -1227,7 +1317,7 @@ CREATE TABLE stok_masuk (
     total DECIMAL(12,2) NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_faktur) REFERENCES faktur(id_faktur) ON DELETE CASCADE
+    FOREIGN KEY (id_pbf) REFERENCES pbf(id_pbf) ON DELETE CASCADE
 );
 
 -- =============================================
@@ -1260,6 +1350,7 @@ CREATE TABLE piutang (
     jumlah_harga DECIMAL(12,2) NOT NULL,
     status ENUM('lunas', 'belum_lunas') NOT NULL DEFAULT 'belum_lunas',
     tanggal_lunas DATE NULL,
+    bukti_pembayaran VARCHAR(255) NULL,
     id_user INT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -1269,9 +1360,9 @@ CREATE TABLE piutang (
 -- =============================================
 -- INDEX untuk performa query
 -- =============================================
-CREATE INDEX idx_faktur_no ON faktur(no_faktur);
-CREATE INDEX idx_faktur_pbf ON faktur(nama_pbf);
-CREATE INDEX idx_faktur_tanggal ON faktur(tanggal_masuk);
+CREATE INDEX idx_pbf_no ON pbf(no_faktur);
+CREATE INDEX idx_pbf_nama ON pbf(nama_pbf);
+CREATE INDEX idx_pbf_tanggal ON pbf(tanggal_masuk);
 CREATE INDEX idx_stok_masuk_obat ON stok_masuk(nama_obat);
 CREATE INDEX idx_expired_date ON obat_expired(expired_date);
 CREATE INDEX idx_expired_obat ON obat_expired(nama_obat);

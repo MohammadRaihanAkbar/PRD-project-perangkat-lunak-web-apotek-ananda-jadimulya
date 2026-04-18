@@ -3,8 +3,8 @@
 ## Sistem Informasi Manajemen Stok Obat
 ## Apotek Ananda Jadimulya
 
-**Versi:** 2.4 (Revisi)
-**Tanggal:** 13 April 2026
+**Versi:** 2.7 (Revisi)
+**Tanggal:** 18 April 2026
 **Disusun oleh:** Tim Pengembang
 
 ---
@@ -19,6 +19,10 @@
 | 2.2 | 4 April 2026 | Tambah tabel PBF sebagai header. Laporan Expired hanya Super Admin. Tambah fitur Global Search & navigasi per PBF. |
 | 2.3 | 13 April 2026 | Mengubah istilah "Tambah Faktur" menjadi "Tambah PBF". Menambah kolom Upload Foto Bukti Pembayaran pada Piutang. |
 | 2.4 | 13 April 2026 | Revisi total tampilan Stok Masuk: tampilan utama menampilkan seluruh obat secara global dengan filter tab per PBF. Tambah obat dilakukan secara global dengan memilih asal PBF. Klik obat menampilkan detail. |
+| 2.5 | 17 April 2026 | Tambah kolom Expired Date di form dan tabel Stok Masuk. Laporan Obat Expired ditambah laporan otomatis (<= 6 bulan) dari stok masuk selain input manual. Update dashboard. |
+| 2.6 | 17 April 2026 | Tambah fitur Log Aktivitas Akun untuk merekam riwayat aktivitas user (Super Admin & Admin). |
+| 2.7 | 18 April 2026 | Update isi Dashboard untuk Super Admin & Admin. Membatasi hak akses Admin hanya untuk Manajemen Stok, PBF, dan Log Aktivitas. Memperjelas Integrasi fitur Tambah PBF berada tepat di dalam UI Manajemen Stok. |
+| 2.8 | 18 April 2026 | Memindahkan kolom `no_faktur` dan `tanggal_masuk` dari tabel/form PBF ke tabel/form Stok Masuk karena bersifat transaksional per pesanan. |
 
 ---
 
@@ -30,10 +34,11 @@ Adapun tujuan dari pengembangan sistem ini adalah sebagai berikut:
 
 1. Mempermudah pencatatan stok obat yang masuk dari PBF (Pedagang Besar Farmasi) per faktur.
 2. Mempermudah pengelolaan dan pencarian data obat masuk di apotek.
-3. Mempermudah pemantauan obat yang mendekati tanggal kedaluwarsa (expired date) melalui input manual.
+3. Mempermudah pemantauan obat yang mendekati tanggal kedaluwarsa (expired date) baik secara otomatis dari stok masuk pengingat 6 bulan) maupun melalui input manual.
 4. Mempermudah pencatatan dan pemantauan piutang ke PBF.
 5. Mempermudah pembuatan laporan piutang secara otomatis dengan fitur export.
 6. Meningkatkan efisiensi pengelolaan persediaan obat di Apotek Ananda Jadimulya.
+7. Meningkatkan keamanan sistem melalui pencatatan riwayat (log) aktivitas seluruh pengguna.
 
 ---
 
@@ -57,6 +62,7 @@ Super Admin memiliki **akses penuh** terhadap seluruh fitur sistem.
 | 4 | Mengelola Laporan Obat Expired | Input, edit, hapus, dan lihat data obat expired |
 | 5 | Mengelola Piutang | Input, edit, lihat, dan export data piutang |
 | 6 | Mengelola Akun Admin | Tambah, edit, dan hapus akun admin |
+| 7 | Mengakses Log Aktivitas | Melihat riwayat aktivitas seluruh akun |
 
 ---
 
@@ -68,14 +74,13 @@ Admin bertugas membantu operasional apotek sehari-hari.
 
 | No | Hak Akses | Keterangan |
 |----|-----------|------------|
-| 1 | Mengakses Dashboard | Melihat ringkasan data apotek |
+| 1 | Mengakses Dashboard | Melihat ringkasan data apotek (Jumlah Stok & Log Aktivitas) |
 | 2 | Mengelola PBF & Stok Masuk | Tambah PBF, input obat global (pilih asal PBF), edit obat |
 | 3 | Pencarian Obat | Mencari data obat dari seluruh PBF |
-| 4 | Melihat Laporan Obat Expired | Hanya melihat data obat expired |
-| 5 | Mengelola Piutang | Input dan lihat data piutang |
+| 4 | Mengakses Log Aktivitas | Melihat riwayat aktivitas |
 
 > [!NOTE]
-> Admin **tidak memiliki akses** untuk: (1) menghapus data stok masuk, (2) input/edit/hapus laporan obat expired, (3) mengelola akun admin. Fitur laporan expired (input, edit, hapus) dan manajemen akun hanya tersedia untuk Super Admin.
+> Admin **hanya memiliki akses** untuk Manajemen Stok (beserta pencarian dan tambah PBF) serta Log Aktivitas. Admin **tidak memiliki akses** ke Laporan Obat Expired, Piutang, dan Kelola Akun. Fitur-fitur tersebut dihilangkan pada tampilan Admin, dan hanya tersedia khusus untuk Super Admin.
 
 ---
 
@@ -132,6 +137,7 @@ User bisa:
 │    klik "+ Tambah PBF Baru") │
 │  - Nama obat                  │
 │  - Satuan                     │
+│  - Expired date               │
 │  - Harga beli                 │
 │  - Discount                   │
 │  - Jumlah masuk               │
@@ -163,6 +169,7 @@ User bisa:
 │  - No. Faktur                  │
 │  - Tanggal masuk               │
 │  - Satuan                      │
+│  - Expired date                │
 │  - Harga beli                  │
 │  - Discount                    │
 │  - Jumlah masuk                │
@@ -215,9 +222,11 @@ End
 
 ---
 
-### 3.3 Input Laporan Obat Expired (Manual — Super Admin Only)
+### 3.3 Laporan Obat Expired (Otomatis & Manual)
 
-Fitur ini digunakan oleh **Super Admin** untuk **mencatat secara manual** obat-obat yang mendekati atau sudah melewati tanggal kedaluwarsa. Admin hanya dapat melihat data.
+Fitur ini akan secara otomatis menampilkan daftar obat dari **Stok Masuk** yang akan kedaluwarsa dalam **6 bulan ke depan** atau sudah lewat tanggal kedaluwarsa. 
+
+Selain laporan otomatis, disediakan juga fitur **Input Data Manual** bagi **Super Admin** untuk mencatat obat expired di luar stok masuk (misal stok lama). Admin hanya dapat melihat data.
 
 **Alur proses:**
 
@@ -361,37 +370,48 @@ Berikut adalah fitur-fitur utama yang akan dikembangkan dalam sistem:
 
 ### 4.2 Dashboard
 
-Dashboard menampilkan ringkasan informasi penting apotek:
+Isi Dashboard dibedakan secara spesifik berdasarkan hak akses (role) pengguna.
+
+**Dashboard Super Admin:**
+Menampilkan ringkasan informasi lengkap apotek secara visual:
 
 | No | Informasi | Keterangan |
 |----|-----------|------------|
-| 1 | Total Stok Masuk | Jumlah total record stok obat masuk |
-| 2 | Obat Hampir Expired | Jumlah obat yang mendekati kedaluwarsa |
-| 3 | Total Piutang Belum Lunas | Jumlah piutang yang belum dilunasi |
-| 4 | Total Piutang Bulan Ini | Rekap piutang bulan berjalan |
+| 1 | Jumlah Stok | Total unit obat yang tersedia saat ini (misal: "1.301 units") |
+| 2 | Expiring (60 Days) | Jumlah unit obat yang akan kedaluwarsa dalam 60 hari ke depan |
+| 3 | Obat Expired 6 Bulan Lagi | Daftar highlight berbentuk card yang menampilkan nama spesifik obat, batch, dan estimasi bulan kedaluwarsanya (<= 6 bulan) |
+| 4 | Log Aktivitas | Widget daftar riwayat aktivitas sistem yang paling baru dilakukan oleh user (misal: "Membuat Laporan EXP", "Menambahkan Stok Obat", "Piutang Lunas") |
+
+**Dashboard Admin:**
+Mengingat keterbatasan hak akses, Dashboard Admin hanya menampilkan widget yang difokuskan pada manajemen stok dan log:
+
+| No | Informasi | Keterangan |
+|----|-----------|------------|
+| 1 | Jumlah Stok | Total unit obat yang tersedia saat ini |
+| 2 | Log Aktivitas | Widget daftar riwayat aktivitas sistem yang paling baru dilakukan oleh user |
 
 ---
 
-### 4.3 Stok Masuk (Tampilan Global dengan Filter PBF)
+### 4.3 Manajemen Stok (Termasuk Tambah PBF)
 
-Fitur utama untuk mencatat obat yang masuk dari PBF. Halaman menampilkan **seluruh obat dari semua PBF** dalam satu tabel global. User dapat memfilter per PBF menggunakan tab/tombol di atas tabel. Saat menambah obat, user memilih asal PBF langsung di form.
+Fitur utama untuk mencatat dan mengelola obat yang masuk. Halaman ini dipusatkan sebagai **Manajemen Stok**, menampilkan **seluruh obat dari semua PBF** dalam satu tabel global. Fitur **Tambah PBF** tidak memiliki halaman terpisah, melainkan terintegrasi langsung berupa tombol di halaman ini (di samping filter tab PBF).
 
-**Tampilan Halaman Stok Masuk:**
+**Tampilan Halaman Manajemen Stok:**
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  STOK MASUK                                                  │
+│  MANAJEMEN STOK                                              │
+│  Data obat masuk dari seluruh PBF                            │
 │──────────────────────────────────────────────────────────────│
-│  Filter PBF:                                                 │
-│  [Semua] [Carmella] [Kimia Farma] [Anugrah] [+ Tambah PBF]  │
+│  [+ Tambah PBF] [Semua] [Nafada] [Aulia] [Kivka]             │
 │──────────────────────────────────────────────────────────────│
 │  🔍 Cari obat...                          [+ Tambah Obat]    │
 │──────────────────────────────────────────────────────────────│
-│  No │ Nama Obat      │ PBF         │ Satuan │ Harga  │ ...  │
-│   1 │ Paracetamol    │ Carmella    │ Strip  │ 5.000  │ ...  │
-│   2 │ Amoxicillin    │ Carmella    │ Box    │ 12.000 │ ...  │
-│   3 │ Omeprazole     │ Kimia Farma │ Strip  │ 8.500  │ ...  │
-│   4 │ Metformin      │ Anugrah     │ Tablet │ 3.200  │ ...  │
+│  No │ Nama Obat      │ PBF         │ Satuan │ Exp Date   │ ...  │
+│   1 │ Paracetamol    │ Carmella    │ Strip  │ 2026-12-10 │ ...  │
+│   2 │ Amoxicillin    │ Carmella    │ Box    │ 2027-01-15 │ ...  │
+│   3 │ Omeprazole     │ Kimia Farma │ Strip  │ 2026-08-30 │ ...  │
+│   4 │ Metformin      │ Anugrah     │ Tablet │ 2026-09-12 │ ...  │
 │  ...│ ...            │ ...         │ ...    │ ...    │ ...  │
 │──────────────────────────────────────────────────────────────│
 │  Klik baris obat untuk melihat detail ↗                      │
@@ -415,12 +435,15 @@ Fitur utama untuk mencatat obat yang masuk dari PBF. Halaman menampilkan **selur
 | No | Kolom | Tipe | Keterangan |
 |----|-------|------|------------|
 | 1 | Asal PBF | Select | Pilih dari daftar PBF yang sudah ada (atau tambah PBF baru) |
-| 2 | Nama Obat | Text | Nama obat yang masuk |
-| 3 | Satuan | Select | Satuan obat (Tube, Strip, Box, Pcs, dll) |
-| 4 | Harga Beli | Number | Harga beli per satuan |
-| 5 | Discount | Number | Potongan harga (dalam rupiah) |
-| 6 | Jumlah Masuk | Number | Jumlah obat yang diterima |
-| 7 | Total | Auto | Otomatis: (Harga Beli - Discount) × Jumlah Masuk |
+| 2 | No. Faktur | Text | Nomor faktur / invoice pembelian dari PBF |
+| 3 | Tanggal Masuk | Date | Tanggal obat diterima |
+| 4 | Nama Obat | Text | Nama obat yang masuk |
+| 5 | Satuan | Select | Satuan obat (Tube, Strip, Box, Pcs, dll) |
+| 6 | Expired Date | Date | Tanggal kedaluwarsa obat |
+| 7 | Harga Beli | Number | Harga beli per satuan |
+| 8 | Discount | Number | Potongan harga (dalam rupiah) |
+| 9 | Jumlah Masuk | Number | Jumlah obat yang diterima |
+| 10 | Total | Auto | Otomatis: (Harga Beli - Discount) × Jumlah Masuk |
 
 **Kolom tabel global Stok Masuk (tampilan):**
 
@@ -432,10 +455,11 @@ Fitur utama untuk mencatat obat yang masuk dari PBF. Halaman menampilkan **selur
 | 4 | No. Faktur | Text | Nomor faktur dari PBF |
 | 5 | Tanggal Masuk | Date | Tanggal obat diterima |
 | 6 | Satuan | Text | Satuan obat |
-| 7 | Harga Beli | Number | Harga beli per satuan |
-| 8 | Discount | Number | Potongan harga |
-| 9 | Jumlah Masuk | Number | Jumlah obat yang diterima |
-| 10 | Total | Number | Otomatis: (Harga Beli - Discount) × Jumlah Masuk |
+| 7 | Expired Date | Date | Tanggal kedaluwarsa |
+| 8 | Harga Beli | Number | Harga beli per satuan |
+| 9 | Discount | Number | Potongan harga |
+| 10 | Jumlah Masuk | Number | Jumlah obat yang diterima |
+| 11 | Total | Number | Otomatis: (Harga Beli - Discount) × Jumlah Masuk |
 
 **Detail Obat (popup/halaman saat klik baris):**
 
@@ -446,17 +470,18 @@ Fitur utama untuk mencatat obat yang masuk dari PBF. Halaman menampilkan **selur
 | 3 | No. Faktur | Nomor faktur dari PBF |
 | 4 | Tanggal Masuk | Tanggal obat diterima |
 | 5 | Satuan | Satuan obat |
-| 6 | Harga Beli | Harga beli per satuan |
-| 7 | Discount | Potongan harga |
-| 8 | Jumlah Masuk | Jumlah obat |
-| 9 | Total | Total harga |
-| 10 | Aksi | Edit (Super Admin & Admin), Hapus (Super Admin saja) |
+| 6 | Expired Date | Tanggal kedaluwarsa obat |
+| 7 | Harga Beli | Harga beli per satuan |
+| 8 | Discount | Potongan harga |
+| 9 | Jumlah Masuk | Jumlah obat |
+| 10 | Total | Total harga |
+| 11 | Aksi | Edit (Super Admin & Admin), Hapus (Super Admin saja) |
 
 ---
 
-### 4.4 Manajemen PBF
+### 4.4 Terintegrasi: Fitur Tambah PBF di Manajemen Stok
 
-Fitur untuk mengelola data PBF (Pedagang Besar Farmasi). PBF bisa ditambahkan melalui tombol "+ Tambah PBF" di bagian filter tab atau melalui form Tambah Obat.
+Fitur untuk mengelola data PBF (Pedagang Besar Farmasi) tidak memiliki menu atau halaman terpisah. PBF ditambahkan melalui tombol "+ Tambah PBF" yang terletak secara langsung di deretan filter tab pada screen **Manajemen Stok**.
 
 **Fitur PBF:**
 
@@ -472,8 +497,6 @@ Fitur untuk mengelola data PBF (Pedagang Besar Farmasi). PBF bisa ditambahkan me
 | No | Kolom | Tipe | Keterangan |
 |----|-------|------|------------|
 | 1 | Nama PBF | Text | Nama Pedagang Besar Farmasi |
-| 2 | No. Faktur | Text | Nomor faktur dari PBF |
-| 3 | Tanggal Masuk | Date | Tanggal obat diterima |
 
 ---
 
@@ -483,10 +506,10 @@ Fitur pencarian terintegrasi di halaman Stok Masuk. User bisa mencari nama obat 
 
 **Contoh:** Cari "Paracetamol" → tampil:
 
-| Tanggal | Nama Obat | Satuan | Harga Beli | Discount | Jumlah | Total | No. Faktur | PBF |
-|---------|-----------|--------|------------|----------|--------|-------|------------|-----|
-| 01/03/2026 | Paracetamol 500mg | Strip | 5.000 | 0 | 100 | 500.000 | F-001 | Carmella |
-| 15/03/2026 | Paracetamol 500mg | Strip | 4.800 | 200 | 50 | 230.000 | F-015 | Kimia Farma |
+| Tanggal | Nama Obat | Satuan | Exp Date | Harga Beli | Discount | Jumlah | Total | No. Faktur | PBF |
+|---------|-----------|--------|----------|------------|----------|--------|-------|------------|-----|
+| 01/03/2026 | Paracetamol 500mg | Strip | 2026-12-10 | 5.000 | 0 | 100 | 500.000 | F-001 | Carmella |
+| 15/03/2026 | Paracetamol 500mg | Strip | 2027-01-15 | 4.800 | 200 | 50 | 230.000 | F-015 | Kimia Farma |
 
 **Opsi satuan obat:**
 
@@ -508,19 +531,20 @@ Fitur pencarian terintegrasi di halaman Stok Masuk. User bisa mencari nama obat 
 
 ---
 
-### 4.6 Laporan Obat Expired (Input Manual — Super Admin Only)
+### 4.6 Laporan Obat Expired (Otomatis & Input Manual)
 
-Fitur ini digunakan oleh **Super Admin** untuk **mencatat secara manual** data obat yang mendekati atau sudah melewati tanggal kedaluwarsa. **Admin hanya dapat melihat** data.
+Fitur ini menyajikan tabel gabungan obat yang mendekati expired (kriteria: **<= 6 bulan dari hari ini**) secara **otomatis dari tabel stok masuk**.
+Selain itu, fitur ini masih menyediakan **Input Manual** oleh **Super Admin** untuk mencatat data obat expired lama. **Admin hanya dapat melihat** data pada laporan ini.
 
 **Fitur:**
 
 | No | Fitur | Akses |
 |----|-------|-------|
-| 1 | Melihat tabel data obat expired | Super Admin, Admin |
+| 1 | Melihat tabel data obat expired | **Super Admin saja** |
 | 2 | Tambah data obat expired (input manual) | **Super Admin saja** |
 | 3 | Edit data obat expired | **Super Admin saja** |
 | 4 | Hapus data obat expired | **Super Admin saja** |
-| 5 | Search/cari data | Super Admin, Admin |
+| 5 | Search/cari data | **Super Admin saja** |
 
 **Kolom tabel obat expired (input & tampilan):**
 
@@ -592,9 +616,32 @@ Fitur ini **hanya dapat diakses oleh Super Admin**.
 
 ---
 
+### 4.9 Log Aktivitas Akun
+
+Fitur ini otomatis berjalan di latar belakang untuk merekam seluruh tindakan yang dilakukan oleh pengguna (Super Admin & Admin), seperti login, tambah data, edit data, dan hapus data. **Super Admin dan Admin dapat melihat laporan Log Aktivitas.**
+
+**Fitur:**
+
+| No | Fitur | Keterangan |
+|----|-------|------------|
+| 1 | Perekaman Otomatis | Sistem otomatis mencatat histori aksi setiap user |
+| 2 | Lihat Log Aktivitas | Halaman tabel log aktivitas atau widget di Dashboard (Akses: Super Admin dan Admin) |
+
+**Kolom Tabel Log Aktivitas (Tampilan):**
+
+| No | Kolom | Tipe | Keterangan |
+|----|-------|------|------------|
+| 1 | Waktu | Waktu sistem | Waktu saat aktivitas terjadi |
+| 2 | User | Nama Akun | Pengguna yang melakukan aktivitas |
+| 3 | Role | Role | Hak akses dari user tersebut |
+| 4 | Aksi | Text | Aksi yang dilakukan (misal: "Login", "Tambah Stok", "Hapus PBF") |
+| 5 | Keterangan | Text | Detail tambahan (misal: "Menambahkan stok Paracetamol") |
+
+---
+
 ## 5. Struktur Database
 
-Database menggunakan **5 tabel utama:**
+Database menggunakan **6 tabel utama:**
 
 | No | Nama Tabel | Keterangan |
 |----|------------|------------|
@@ -603,6 +650,7 @@ Database menggunakan **5 tabel utama:**
 | 3 | `stok_masuk` | Detail obat per PBF (detail item) |
 | 4 | `obat_expired` | Data obat expired (input manual) |
 | 5 | `piutang` | Data piutang ke PBF |
+| 6 | `log_aktivitas` | Data riwayat log aktivitas pengguna |
 
 ---
 
@@ -628,8 +676,6 @@ Database menggunakan **5 tabel utama:**
 |-------|-----------|------------|
 | `id_pbf` | INT (PK, AI) | ID PBF penerimaan |
 | `nama_pbf` | VARCHAR(100) | Nama Pedagang Besar Farmasi |
-| `no_faktur` | VARCHAR(100) | Nomor faktur dari PBF |
-| `tanggal_masuk` | DATE | Tanggal obat diterima |
 | `id_user` | INT (FK → users.id_user) | User yang menginput |
 | `created_at` | DATETIME | Tanggal data dibuat |
 | `updated_at` | DATETIME | Tanggal terakhir diperbarui |
@@ -642,8 +688,11 @@ Database menggunakan **5 tabel utama:**
 |-------|-----------|------------|
 | `id_masuk` | INT (PK, AI) | ID stok masuk |
 | `id_pbf` | INT (FK → pbf.id_pbf) | Relasi ke PBF penerimaan |
+| `no_faktur` | VARCHAR(100) | Nomor faktur / invoice dari PBF |
+| `tanggal_masuk` | DATE | Tanggal obat diterima |
 | `nama_obat` | VARCHAR(100) | Nama obat yang masuk |
 | `satuan` | ENUM('Tube', 'FLS', 'Strip', 'Sach', 'Box', 'Kaleng', 'Pcs', 'Tablet', 'Kapsul', 'Ampul', 'Supp', 'Ovula', 'Pack') | Satuan obat |
+| `expired_date` | DATE | Tanggal kedaluwarsa |
 | `harga_beli` | DECIMAL(12,2) | Harga beli per satuan |
 | `discount` | DECIMAL(12,2) DEFAULT 0 | Potongan harga |
 | `jumlah_masuk` | INT | Jumlah obat yang masuk |
@@ -690,6 +739,18 @@ Database menggunakan **5 tabel utama:**
 
 ---
 
+### 6.6 Tabel `log_aktivitas`
+
+| Field | Tipe Data | Keterangan |
+|-------|-----------|------------|
+| `id_log` | INT (PK, AI) | ID log aktivitas |
+| `id_user` | INT (FK → users.id_user) | ID user yang melakukan aktivitas |
+| `aksi` | VARCHAR(100) | Jenis aksi: login, tambah, edit, hapus, dll. |
+| `keterangan` | TEXT | Detail aktivitas secara lengkap |
+| `created_at` | DATETIME | Waktu kejadian aktivitas |
+
+---
+
 ## 7. ERD (Entity Relationship Diagram)
 
 ```mermaid
@@ -697,6 +758,7 @@ erDiagram
     users ||--o{ pbf : "menginput"
     users ||--o{ obat_expired : "menginput"
     users ||--o{ piutang : "menginput"
+    users ||--o{ log_aktivitas : "melakukan"
     pbf ||--o{ stok_masuk : "memiliki"
 
     users {
@@ -709,11 +771,17 @@ erDiagram
         DATETIME updated_at
     }
 
+    log_aktivitas {
+        INT id_log PK
+        INT id_user FK
+        VARCHAR aksi
+        TEXT keterangan
+        DATETIME created_at
+    }
+
     pbf {
         INT id_pbf PK
         VARCHAR nama_pbf
-        VARCHAR no_faktur
-        DATE tanggal_masuk
         INT id_user FK
         DATETIME created_at
         DATETIME updated_at
@@ -722,8 +790,11 @@ erDiagram
     stok_masuk {
         INT id_masuk PK
         INT id_pbf FK
+        VARCHAR no_faktur
+        DATE tanggal_masuk
         VARCHAR nama_obat
         ENUM satuan
+        DATE expired_date
         DECIMAL harga_beli
         DECIMAL discount
         INT jumlah_masuk
@@ -773,7 +844,9 @@ users
   │
   ├──────── obat_expired   (user menginput data obat expired)
   │
-  └──────── piutang        (user menginput piutang)
+  ├──────── piutang        (user menginput piutang)
+  │
+  └──────── log_aktivitas  (user melakukan aktivitas)
 
 
 pbf
@@ -784,7 +857,7 @@ pbf
 ```
 
 > [!NOTE]
-> Tabel `pbf` berfungsi sebagai **header** yang menyimpan info PBF penerimaan, sedangkan `stok_masuk` menyimpan **detail item obat** per PBF. Tabel `obat_expired` bersifat independen (input manual oleh Super Admin).
+> Tabel `pbf` berfungsi sebagai **header** yang menyimpan info PBF penerimaan, sedangkan `stok_masuk` menyimpan **detail item obat** per PBF termasuk tanggal `expired_date`-nya. Laporan Obat Expired akan mengambil gabungan data dari stok_masuk yang hampir kedaluwarsa serta data dari tabel `obat_expired` (input manual tambahan).
 
 ---
 
@@ -814,7 +887,7 @@ pbf
 │                                                             │
 │   ┌───────────────────┐                                     │
 │   │  Laporan Obat      │◄──────── Super Admin & Admin       │
-│   │  Expired (Manual)  │          (Hapus: Super Admin)      │
+│   │  Expired           │          (Hapus: Super Admin)      │
 │   └───────────────────┘                                     │
 │                                                             │
 │   ┌───────────────────┐                                     │
@@ -823,6 +896,10 @@ pbf
 │                                                             │
 │   ┌───────────────────┐                                     │
 │   │  Kelola Admin      │◄──────── Super Admin SAJA          │
+│   └───────────────────┘                                     │
+│                                                             │
+│   ┌───────────────────┐                                     │
+│   │  Log Aktivitas     │◄──────── Super Admin SAJA          │
 │   └───────────────────┘                                     │
 │                                                             │
 │   ┌───────────────────┐                                     │
@@ -844,6 +921,7 @@ Super Admin (Apoteker)
     ├─── Laporan Obat Expired (Tambah, Edit, Hapus, Lihat, Cari)
     ├─── Kelola Piutang (Tambah, Edit, Lihat, Upload Bukti, Export)
     ├─── Kelola Admin (Tambah, Edit, Hapus)
+    ├─── Log Aktivitas Akun (Melihat rekam jejak sistem)
     └─── Logout
 
 Admin (Asisten Apoteker)
@@ -895,6 +973,7 @@ Admin (Asisten Apoteker)
 │   tambah PBF baru)   │
 │ - Nama obat          │
 │ - Satuan             │
+│ - Expired date       │
 │ - Harga beli         │
 │ - Discount           │
 │ - Jumlah masuk       │
@@ -1060,6 +1139,16 @@ classDiagram
         +getRole()
     }
 
+    class LogAktivitas {
+        -int id_log
+        -int id_user
+        -string aksi
+        -string keterangan
+        -datetime created_at
+        +catatLog()
+        +getLogAktivitas()
+    }
+
     class PBF {
         -int id_pbf
         -string nama_pbf
@@ -1079,6 +1168,7 @@ classDiagram
         -int id_pbf
         -string nama_obat
         -string satuan
+        -date expired_date
         -decimal harga_beli
         -decimal discount
         -int jumlah_masuk
@@ -1109,6 +1199,7 @@ classDiagram
         +editObatExpired()
         +hapusObatExpired()
         +cariObatExpired()
+        +getWarningExpired()
     }
 
     class Piutang {
@@ -1135,6 +1226,7 @@ classDiagram
     User "1" --> "*" PBF : menginput
     User "1" --> "*" ObatExpired : menginput
     User "1" --> "*" Piutang : menginput
+    User "1" --> "*" LogAktivitas : melakukan
     PBF "1" --> "*" StokMasuk : memiliki
 ```
 
@@ -1155,13 +1247,15 @@ apotek-ananda/
 │   │   ├── stok_masuk_controller.php  # CRUD data stok masuk
 │   │   ├── expired_controller.php     # CRUD data obat expired
 │   │   ├── piutang_controller.php     # CRUD piutang & export
-│   │   └── admin_controller.php       # CRUD akun admin
+│   │   ├── admin_controller.php       # CRUD akun admin
+│   │   └── log_controller.php         # Tampil & catat log aktivitas
 │   │
 │   ├── models/
 │   │   ├── user.php                   # Model tabel users
 │   │   ├── stok_masuk.php             # Model tabel stok_masuk
 │   │   ├── obat_expired.php           # Model tabel obat_expired
-│   │   └── piutang.php                # Model tabel piutang
+│   │   ├── piutang.php                # Model tabel piutang
+│   │   └── log_aktivitas.php          # Model tabel log_aktivitas
 │   │
 │   └── helpers/
 │       ├── session_helper.php         # Helper session management
@@ -1189,7 +1283,8 @@ apotek-ananda/
 │   │   ├── stok_masuk.php             # Halaman stok masuk per faktur/PBF
 │   │   ├── laporan_expired.php        # Halaman input & laporan obat expired
 │   │   ├── piutang.php                # Halaman manajemen piutang
-│   │   └── kelola_admin.php           # Halaman kelola admin
+│   │   ├── kelola_admin.php           # Halaman kelola admin
+│   │   └── log_aktivitas.php          # Halaman tabel log aktivitas
 │   │
 │   └── admin/
 │       ├── dashboard.php              # Dashboard Admin
@@ -1220,10 +1315,12 @@ Mengelola logika sistem dan koneksi database.
 | | `expired_controller.php` | CRUD data obat expired (input manual) |
 | | `piutang_controller.php` | CRUD piutang, update status, dan export laporan |
 | | `admin_controller.php` | CRUD akun admin (Super Admin only) |
+| | `log_controller.php` | Mencatat dan membaca log aktivitas sistem |
 | `models/` | `user.php` | Query tabel `users` |
 | | `stok_masuk.php` | Query tabel `stok_masuk` |
 | | `obat_expired.php` | Query tabel `obat_expired` |
 | | `piutang.php` | Query tabel `piutang` |
+| | `log_aktivitas.php` | Query tabel `log_aktivitas` |
 | `helpers/` | `session_helper.php` | Fungsi bantu session & autentikasi |
 | | `export_helper.php` | Fungsi bantu export ke Excel & PDF |
 
@@ -1311,6 +1408,7 @@ CREATE TABLE stok_masuk (
     id_pbf INT NOT NULL,
     nama_obat VARCHAR(100) NOT NULL,
     satuan ENUM('Tube', 'FLS', 'Strip', 'Sach', 'Box', 'Kaleng', 'Pcs', 'Tablet', 'Kapsul', 'Ampul', 'Supp', 'Ovula', 'Pack') NOT NULL,
+    expired_date DATE NOT NULL,
     harga_beli DECIMAL(12,2) NOT NULL DEFAULT 0,
     discount DECIMAL(12,2) NOT NULL DEFAULT 0,
     jumlah_masuk INT NOT NULL DEFAULT 0,
@@ -1358,12 +1456,25 @@ CREATE TABLE piutang (
 );
 
 -- =============================================
+-- TABEL: log_aktivitas
+-- =============================================
+CREATE TABLE log_aktivitas (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    id_user INT NOT NULL,
+    aksi VARCHAR(100) NOT NULL,
+    keterangan TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_user) REFERENCES users(id_user) ON DELETE CASCADE
+);
+
+-- =============================================
 -- INDEX untuk performa query
 -- =============================================
 CREATE INDEX idx_pbf_no ON pbf(no_faktur);
 CREATE INDEX idx_pbf_nama ON pbf(nama_pbf);
 CREATE INDEX idx_pbf_tanggal ON pbf(tanggal_masuk);
 CREATE INDEX idx_stok_masuk_obat ON stok_masuk(nama_obat);
+CREATE INDEX idx_stok_masuk_exp ON stok_masuk(expired_date);
 CREATE INDEX idx_expired_date ON obat_expired(expired_date);
 CREATE INDEX idx_expired_obat ON obat_expired(nama_obat);
 CREATE INDEX idx_piutang_status ON piutang(status);
